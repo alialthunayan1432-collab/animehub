@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AnimeCard from "@/components/AnimeCard";
 import WatchlistButton from "@/components/WatchlistButton";
+import StarRating from "@/components/StarRating";
+import ShareButtons from "@/components/ShareButtons";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -24,7 +26,10 @@ function mapToAnime(m: AniListMedia): Anime {
     id: m.id.toString(),
     title: m.title.english || m.title.romaji || "Unknown",
     titleAr: m.title.native || m.title.romaji || "",
-    synopsis: (m.description || "No description available").replace(/<[^>]*>/g, ""),
+    synopsis: (m.description || "No description available").replace(
+      /<[^>]*>/g,
+      ""
+    ),
     year: m.startDate?.year || 0,
     rating: (m.averageScore || 0) / 10,
     genre: m.genres || [],
@@ -148,6 +153,18 @@ export default async function AnimeDetails({
                 ▶ Watch Now
               </Link>
               <WatchlistButton anime={anime} />
+            </div>
+
+            <div className="mt-4">
+              <p className="text-sm text-gray-400 mb-2">Rate this anime:</p>
+              <StarRating animeId={anime.id} />
+            </div>
+
+            <div className="mt-4">
+              <ShareButtons
+                url={`http://localhost:3000/anime/${anime.id}`}
+                title={anime.title}
+              />
             </div>
           </div>
         </div>
