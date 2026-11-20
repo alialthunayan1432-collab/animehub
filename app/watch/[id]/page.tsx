@@ -5,9 +5,7 @@ import type { Anime } from "@/data/animes";
 
 export const instant = false;
 
-const SAMPLE_VIDEO =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-
+const SAMPLE_VIDEO = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 type AniListMedia = {
   id: number;
   title: { romaji?: string; english?: string; native?: string };
