@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import VideoPlayer from "@/components/VideoPlayer";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -80,19 +81,14 @@ export default async function WatchPage({
       </div>
 
       <section className="max-w-6xl mx-auto px-4 py-6">
-        <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-          <video
-            key={currentEp}
-            controls
-            autoPlay
-            className="w-full h-full"
-            poster={anime.banner}
-          >
-            <source src={SAMPLE_VIDEO} type="video/mp4" />
-            Your browser does not support video playback.
-          </video>
-        </div>
+        {/* Vidstack Player */}
+        <VideoPlayer
+          src={SAMPLE_VIDEO}
+          poster={anime.banner}
+          title={`${anime.title} - Episode ${currentEp}`}
+        />
 
+        {/* Navigation */}
         <div className="flex items-center justify-between mt-4">
           {prevEp ? (
             <Link
@@ -121,6 +117,7 @@ export default async function WatchPage({
           )}
         </div>
 
+        {/* Episode List */}
         <div className="mt-8">
           <h2 className="text-lg font-semibold mb-3">Episodes</h2>
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
