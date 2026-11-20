@@ -10,7 +10,7 @@ export default function Navbar() {
 
   const links = [
     { href: "/", label: "Home" },
-    { href: "/popular", label: "Popular" },
+    { href: "/top", label: "Top Rated" },
     { href: "/genres", label: "Genres" },
   ];
 
@@ -35,6 +35,7 @@ export default function Navbar() {
           ))}
         </nav>
 
+        {/* شريط البحث */}
         <form action="/search" className="flex-1 max-w-md ml-auto">
           <input
             type="text"

@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   const query = searchParams.get("q");
   const id = searchParams.get("id");
   const genre = searchParams.get("genre");
+  const sort = searchParams.get("sort") || "POPULARITY_DESC";
   const page = searchParams.get("page") || "1";
 
   // لو فيه id → نجيب أنمي واحد
@@ -44,16 +45,16 @@ export async function GET(request: Request) {
     return NextResponse.json(data.data.Media);
   }
 
-  // لو مفيش id → نجيب قائمة (بحث / تصنيف / الأكثر شعبية)
+  // قائمة (بحث / تصنيف / أعلى تقييم / شعبية)
   const listQuery = `
-    query ($search: String, $genre: String, $page: Int) {
+    query ($search: String, $genre: String, $sort: [MediaSort], $page: Int) {
       Page(page: $page, perPage: 24) {
         pageInfo {
           currentPage
           lastPage
           hasNextPage
         }
-        media(search: $search, genre: $genre, type: ANIME, sort: POPULARITY_DESC) {
+        media(search: $search, genre: $genre, type: ANIME, sort: $sort) {
           id
           title { romaji english native }
           coverImage { large }
@@ -77,6 +78,7 @@ export async function GET(request: Request) {
       variables: {
         search: query || null,
         genre: genre || null,
+        sort: [sort],
         page: parseInt(page),
       },
     }),
