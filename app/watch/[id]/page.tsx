@@ -26,15 +26,15 @@ export default async function WatchPage({
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="px-6 py-4 flex items-center justify-between border-b border-gray-800">
+      {/* شريط علوي بسيط (الـ Navbar موجود من الـ layout) */}
+      <div className="px-6 py-3 border-b border-gray-800">
         <Link
           href={`/anime/${anime.id}`}
-          className="text-purple-400 hover:text-purple-300"
+          className="text-purple-400 hover:text-purple-300 text-sm"
         >
           ← {anime.title}
         </Link>
-        <h1 className="text-sm text-gray-400">الحلقة {currentEp}</h1>
-      </header>
+      </div>
 
       <section className="max-w-6xl mx-auto px-4 py-6">
         {/* Player */}
