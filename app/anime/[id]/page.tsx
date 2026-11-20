@@ -1,8 +1,52 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAnimeById } from "@/data/animes";
+import type { Anime } from "@/data/animes";
 
 export const instant = false;
+
+type AniListMedia = {
+  id: number;
+  title: { romaji?: string; english?: string; native?: string };
+  coverImage: { large: string };
+  bannerImage?: string;
+  averageScore?: number;
+  episodes?: number;
+  status: string;
+  genres: string[];
+  description?: string;
+  startDate?: { year?: number };
+};
+
+function mapToAnime(m: AniListMedia): Anime {
+  return {
+    id: m.id.toString(),
+    title: m.title.english || m.title.romaji || "Unknown",
+    titleAr: m.title.native || m.title.romaji || "",
+    synopsis: (m.description || "No description available").replace(/<[^>]*>/g, ""),
+    year: m.startDate?.year || 0,
+    rating: (m.averageScore || 0) / 10,
+    genre: m.genres || [],
+    image: m.coverImage.large,
+    banner: m.bannerImage || m.coverImage.large,
+    episodes: m.episodes || 0,
+    status: m.status === "RELEASING" ? "Ongoing" : "Completed",
+  };
+}
+
+async function getAnime(id: string): Promise<Anime | null> {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/anime?id=${id}`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return null;
+    const data: AniListMedia = await res.json();
+    if (!data || !data.id) return null;
+    return mapToAnime(data);
+  } catch {
+    return null;
+  }
+}
 
 export default async function AnimeDetails({
   params,
@@ -10,18 +54,17 @@ export default async function AnimeDetails({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const anime = getAnimeById(id);
+  const anime = await getAnime(id);
 
   if (!anime) notFound();
 
   const episodeList = Array.from(
-    { length: Math.min(anime.episodes, 12) },
+    { length: Math.min(anime.episodes || 12, 12) },
     (_, i) => i + 1
   );
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      {/* Banner */}
       <div className="relative h-72 w-full overflow-hidden">
         <img
           src={anime.banner}
@@ -31,15 +74,14 @@ export default async function AnimeDetails({
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
         <Link
           href="/"
-          className="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded text-sm hover:bg-black"
+          className="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded text-sm hover:bg-black z-10"
         >
-          ← رجوع
+          ← Back
         </Link>
       </div>
 
-      {/* Info */}
       <section className="px-6 -mt-32 relative z-10">
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
           <img
             src={anime.image}
             alt={anime.title}
@@ -51,18 +93,18 @@ export default async function AnimeDetails({
 
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-4">
               <span className="bg-yellow-500 text-black px-2 py-0.5 rounded font-semibold">
-                ⭐ {anime.rating}
+                ⭐ {anime.rating.toFixed(1)}
               </span>
               <span>{anime.year}</span>
               <span>•</span>
-              <span>{anime.episodes} حلقة</span>
+              <span>{anime.episodes} episodes</span>
               <span>•</span>
               <span
                 className={
                   anime.status === "Ongoing" ? "text-green-400" : "text-blue-400"
                 }
               >
-                {anime.status === "Ongoing" ? "مستمر" : "مكتمل"}
+                {anime.status}
               </span>
             </div>
 
@@ -77,7 +119,7 @@ export default async function AnimeDetails({
               ))}
             </div>
 
-            <p className="text-gray-300 max-w-2xl leading-relaxed">
+            <p className="text-gray-300 max-w-2xl leading-relaxed whitespace-pre-line">
               {anime.synopsis}
             </p>
 
@@ -85,27 +127,28 @@ export default async function AnimeDetails({
               href={`/watch/${anime.id}?ep=1`}
               className="inline-block mt-6 bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition"
             >
-              ▶ شاهد الآن
+              ▶ Watch Now
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Episodes */}
-      <section className="px-6 py-10">
-        <h2 className="text-xl font-semibold mb-4">الحلقات</h2>
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-          {episodeList.map((ep) => (
-            <Link
-              key={ep}
-              href={`/watch/${anime.id}?ep=${ep}`}
-              className="bg-gray-900 hover:bg-purple-600 border border-gray-800 text-center py-3 rounded transition text-sm"
-            >
-              {ep}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {anime.episodes > 0 && (
+        <section className="px-6 py-10 max-w-7xl mx-auto">
+          <h2 className="text-xl font-semibold mb-4">Episodes</h2>
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+            {episodeList.map((ep) => (
+              <Link
+                key={ep}
+                href={`/watch/${anime.id}?ep=${ep}`}
+                className="bg-gray-900 hover:bg-purple-600 border border-gray-800 text-center py-3 rounded transition text-sm"
+              >
+                {ep}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
