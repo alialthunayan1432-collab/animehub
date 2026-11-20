@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 export type WatchProgress = {
   animeId: string;
@@ -14,41 +16,113 @@ export type WatchProgress = {
 
 type ProgressContextType = {
   progress: WatchProgress[];
-  saveProgress: (data: WatchProgress) => void;
-  removeProgress: (animeId: string) => void;
+  saveProgress: (data: WatchProgress) => Promise<void>;
+  removeProgress: (animeId: string) => Promise<void>;
   getProgress: (animeId: string) => WatchProgress | undefined;
+  loading: boolean;
 };
 
 const ProgressContext = createContext<ProgressContextType | null>(null);
 
-const STORAGE_KEY = "watch_progress";
-
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<WatchProgress[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setProgress(JSON.parse(stored));
-    } catch {}
-    setMounted(true);
-  }, []);
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    getUser();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, [supabase]);
 
   useEffect(() => {
-    if (mounted) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    if (!user) {
+      setProgress([]);
+      setLoading(false);
+      return;
     }
-  }, [progress, mounted]);
 
-  function saveProgress(data: WatchProgress) {
+    const fetchProgress = async () => {
+      setLoading(true);
+      console.log("Fetching progress for user:", user.id);
+
+      const { data, error } = await supabase
+        .from("watch_progress")
+        .select("*")
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching progress:", error);
+      } else if (data) {
+        console.log("Fetched progress data:", data);
+        const items: WatchProgress[] = data.map((row: any) => ({
+          animeId: row.anime_id,
+          animeTitle: row.anime_title,
+          animeImage: row.anime_image,
+          episode: row.episode,
+          currentTime: row.progress_time,
+          duration: row.duration,
+          updatedAt: new Date(row.updated_at).getTime(),
+        }));
+        setProgress(items);
+      }
+      setLoading(false);
+    };
+
+    fetchProgress();
+  }, [user, supabase]);
+
+  async function saveProgress(data: WatchProgress) {
+    if (!user) {
+      console.log("No user, skipping save");
+      return;
+    }
+
+    console.log("Saving progress for user:", user.id, "data:", data);
+
+    const { error } = await supabase.from("watch_progress").upsert(
+      {
+        user_id: user.id,
+        anime_id: data.animeId,
+        anime_title: data.animeTitle,
+        anime_image: data.animeImage,
+        episode: data.episode,
+        progress_time: data.currentTime,
+        duration: data.duration,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,anime_id" }
+    );
+
+    if (error) {
+      console.error("Error saving progress:", error);
+    } else {
+      console.log("Progress saved successfully!");
+    }
+
     setProgress((prev) => {
       const filtered = prev.filter((p) => p.animeId !== data.animeId);
-      return [...filtered, { ...data, updatedAt: Date.now() }];
+      return [{ ...data, updatedAt: Date.now() }, ...filtered];
     });
   }
 
-  function removeProgress(animeId: string) {
+  async function removeProgress(animeId: string) {
+    if (!user) return;
+    await supabase
+      .from("watch_progress")
+      .delete()
+      .eq("anime_id", animeId)
+      .eq("user_id", user.id);
+
     setProgress((prev) => prev.filter((p) => p.animeId !== animeId));
   }
 
@@ -58,7 +132,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ProgressContext.Provider
-      value={{ progress, saveProgress, removeProgress, getProgress }}
+      value={{ progress, saveProgress, removeProgress, getProgress, loading }}
     >
       {children}
     </ProgressContext.Provider>
