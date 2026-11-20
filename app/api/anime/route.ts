@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   const query = searchParams.get("q");
   const id = searchParams.get("id");
   const genre = searchParams.get("genre");
+  const year = searchParams.get("year");
   const sort = searchParams.get("sort") || "POPULARITY_DESC";
   const page = searchParams.get("page") || "1";
 
@@ -45,16 +46,16 @@ export async function GET(request: Request) {
     return NextResponse.json(data.data.Media);
   }
 
-  // قائمة (بحث / تصنيف / أعلى تقييم / شعبية)
+  // قائمة (بحث / تصنيف / سنة / ترتيب)
   const listQuery = `
-    query ($search: String, $genre: String, $sort: [MediaSort], $page: Int) {
+    query ($search: String, $genre: String, $seasonYear: Int, $sort: [MediaSort], $page: Int) {
       Page(page: $page, perPage: 24) {
         pageInfo {
           currentPage
           lastPage
           hasNextPage
         }
-        media(search: $search, genre: $genre, type: ANIME, sort: $sort) {
+        media(search: $search, genre: $genre, seasonYear: $seasonYear, type: ANIME, sort: $sort) {
           id
           title { romaji english native }
           coverImage { large }
@@ -78,6 +79,7 @@ export async function GET(request: Request) {
       variables: {
         search: query || null,
         genre: genre || null,
+        seasonYear: year ? parseInt(year) : null,
         sort: [sort],
         page: parseInt(page),
       },

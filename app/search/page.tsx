@@ -1,4 +1,5 @@
 import AnimeCard from "@/components/AnimeCard";
+import SearchFilters from "@/components/SearchFilters";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -37,11 +38,19 @@ function mapToAnime(m: AniListMedia): Anime {
   };
 }
 
-async function searchAnime(q: string): Promise<Anime[]> {
+async function searchAnime(
+  q: string,
+  year: string,
+  sort: string
+): Promise<Anime[]> {
   if (!q) return [];
   try {
+    const params = new URLSearchParams({ q });
+    if (year) params.set("year", year);
+    if (sort) params.set("sort", sort);
+
     const res = await fetch(
-      `http://localhost:3000/api/anime?q=${encodeURIComponent(q)}`,
+      `http://localhost:3000/api/anime?${params.toString()}`,
       { next: { revalidate: 300 } }
     );
     if (!res.ok) return [];
@@ -55,28 +64,35 @@ async function searchAnime(q: string): Promise<Anime[]> {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; year?: string; sort?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, year, sort } = await searchParams;
   const query = (q || "").trim();
-  const results = await searchAnime(query);
+  const currentYear = year || "";
+  const currentSort = sort || "POPULARITY_DESC";
+
+  const results = await searchAnime(query, currentYear, currentSort);
 
   return (
     <main className="min-h-screen">
       <section className="max-w-7xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold mb-2">Search</h1>
-        <p className="text-gray-400 mb-8">
+        <p className="text-gray-400 mb-6">
           {query
             ? `Results for "${query}" — ${results.length} found`
             : "Type in the search bar above to start"}
         </p>
+
+        {query && (
+          <SearchFilters currentYear={currentYear} currentSort={currentSort} />
+        )}
 
         {results.length === 0 && query ? (
           <div className="text-center py-20">
             <p className="text-6xl mb-4">🔍</p>
             <p className="text-xl text-gray-400 mb-2">No results found</p>
             <p className="text-sm text-gray-500">
-              Try another keyword like "Naruto" or "Attack"
+              Try another keyword or clear the filters
             </p>
           </div>
         ) : (
