@@ -5,7 +5,8 @@ import type { Anime } from "@/data/animes";
 
 export const instant = false;
 
-const SAMPLE_VIDEO = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+const SAMPLE_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
+
 type AniListMedia = {
   id: number;
   title: { romaji?: string; english?: string; native?: string };
@@ -79,14 +80,16 @@ export default async function WatchPage({
       </div>
 
       <section className="max-w-6xl mx-auto px-4 py-6">
-        {/* Vidstack Player */}
         <VideoPlayer
           src={SAMPLE_VIDEO}
           poster={anime.banner}
           title={`${anime.title} - Episode ${currentEp}`}
+          animeId={anime.id}
+          animeTitle={anime.title}
+          animeImage={anime.image}
+          episode={currentEp}
         />
 
-        {/* Navigation */}
         <div className="flex items-center justify-between mt-4">
           {prevEp ? (
             <Link
@@ -115,7 +118,6 @@ export default async function WatchPage({
           )}
         </div>
 
-        {/* Episode List */}
         <div className="mt-8">
           <h2 className="text-lg font-semibold mb-3">Episodes</h2>
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">

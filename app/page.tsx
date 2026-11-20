@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
+import ContinueWatching from "@/components/ContinueWatching";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -19,11 +20,7 @@ type AniListMedia = {
 
 type ApiResponse = {
   media: AniListMedia[];
-  pageInfo: {
-    currentPage: number;
-    lastPage: number;
-    hasNextPage: boolean;
-  };
+  pageInfo: { currentPage: number; lastPage: number; hasNextPage: boolean };
 };
 
 function mapToAnime(m: AniListMedia): Anime {
@@ -80,6 +77,8 @@ export default async function Home({
         </div>
       </section>
 
+      <ContinueWatching />
+
       <section className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold">
@@ -99,7 +98,6 @@ export default async function Home({
               ))}
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-center gap-3 mt-10">
               {currentPage > 1 && (
                 <Link

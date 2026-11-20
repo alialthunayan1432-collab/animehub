@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { WatchlistProvider } from "@/components/WatchlistContext";
+import { ProgressProvider } from "@/components/ProgressContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,9 +32,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 text-white min-h-screen flex flex-col`}
       >
         <WatchlistProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <ProgressProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </ProgressProvider>
         </WatchlistProvider>
       </body>
     </html>
