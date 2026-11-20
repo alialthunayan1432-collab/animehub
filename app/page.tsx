@@ -83,6 +83,20 @@ async function getHeroAnime(): Promise<HeroAnime[]> {
   }
 }
 
+async function getTrending(): Promise<Anime[]> {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/anime?sort=TRENDING_DESC&page=1`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return [];
+    const data: ApiResponse = await res.json();
+    return data.media.slice(0, 6).map(mapToAnime);
+  } catch {
+    return [];
+  }
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -90,8 +104,11 @@ export default async function Home({
 }) {
   const { page } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || "1"));
-  const data = await getPopularAnime(currentPage);
-  const heroAnimes = await getHeroAnime();
+  const [data, heroAnimes, trendingAnimes] = await Promise.all([
+    getPopularAnime(currentPage),
+    getHeroAnime(),
+    getTrending(),
+  ]);
 
   const animes = data?.media?.map(mapToAnime) || [];
   const pageInfo = data?.pageInfo;
@@ -102,6 +119,27 @@ export default async function Home({
 
       <ContinueWatching />
 
+      {/* Trending Section */}
+      {trendingAnimes.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-10">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold">🔥 Trending Now</h3>
+            <Link
+              href="/trending"
+              className="text-purple-400 text-sm hover:underline"
+            >
+              View All →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {trendingAnimes.map((anime) => (
+              <AnimeCard key={`trend-${anime.id}`} anime={anime} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Popular Section */}
       <section className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold">
@@ -110,9 +148,7 @@ export default async function Home({
         </div>
 
         {animes.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">
-            Loading anime...
-          </p>
+          <p className="text-center text-gray-400 py-10">Loading anime...</p>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">

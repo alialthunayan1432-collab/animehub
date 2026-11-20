@@ -15,17 +15,20 @@ export default function Footer() {
           <h4 className="text-white font-semibold mb-3">Quick Links</h4>
           <ul className="space-y-2 text-gray-400">
             <li><Link href="/" className="hover:text-purple-400">Home</Link></li>
-            <li><Link href="/popular" className="hover:text-purple-400">Popular</Link></li>
+            <li><Link href="/trending" className="hover:text-purple-400">Trending</Link></li>
+            <li><Link href="/top" className="hover:text-purple-400">Top Rated</Link></li>
             <li><Link href="/genres" className="hover:text-purple-400">Genres</Link></li>
+            <li><Link href="/watchlist" className="hover:text-purple-400">My List</Link></li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-white font-semibold mb-3">Categories</h4>
           <ul className="space-y-2 text-gray-400">
-            <li><Link href="/genres/action" className="hover:text-purple-400">Action</Link></li>
-            <li><Link href="/genres/adventure" className="hover:text-purple-400">Adventure</Link></li>
-            <li><Link href="/genres/fantasy" className="hover:text-purple-400">Fantasy</Link></li>
+            <li><Link href="/genres/Action" className="hover:text-purple-400">Action</Link></li>
+            <li><Link href="/genres/Adventure" className="hover:text-purple-400">Adventure</Link></li>
+            <li><Link href="/genres/Fantasy" className="hover:text-purple-400">Fantasy</Link></li>
+            <li><Link href="/genres/Romance" className="hover:text-purple-400">Romance</Link></li>
           </ul>
         </div>
 

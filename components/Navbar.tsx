@@ -1,21 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useWatchlist } from "./WatchlistContext";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const { watchlist } = useWatchlist();
 
   const links = [
     { href: "/", label: "Home" },
+    { href: "/trending", label: "Trending" },
     { href: "/top", label: "Top Rated" },
     { href: "/genres", label: "Genres" },
     { href: "/watchlist", label: "My List" },
   ];
+
+  async function goRandom() {
+    try {
+      const res = await fetch("http://localhost:3000/api/anime?sort=TRENDING_DESC&page=1");
+      if (!res.ok) return;
+      const data = await res.json();
+      const media = data.media || [];
+      if (media.length === 0) return;
+      const random = media[Math.floor(Math.random() * media.length)];
+      router.push(`/anime/${random.id}`);
+    } catch {}
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-gray-950/90 backdrop-blur border-b border-gray-800">
@@ -24,7 +38,7 @@ export default function Navbar() {
           AnimeHub
         </Link>
 
-        <nav className="hidden md:flex gap-5 text-sm text-gray-300 shrink-0">
+        <nav className="hidden md:flex gap-4 text-sm text-gray-300 shrink-0">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -53,6 +67,14 @@ export default function Navbar() {
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
           />
         </form>
+
+        <button
+          onClick={goRandom}
+          className="hidden sm:block bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-semibold transition shrink-0"
+          title="Random Anime"
+        >
+          🎲
+        </button>
 
         <button className="hidden sm:block bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition shrink-0">
           Sign In
