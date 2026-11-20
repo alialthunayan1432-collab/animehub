@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 export default function UserNav() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -33,6 +34,7 @@ export default function UserNav() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setMenuOpen(false);
     router.push("/");
     router.refresh();
   };
@@ -53,16 +55,50 @@ export default function UserNav() {
   }
 
   return (
-    <div className="hidden sm:flex items-center gap-3 shrink-0">
-      <span className="text-sm text-gray-300 max-w-[120px] truncate" title={user.email}>
-        {user.email}
-      </span>
+    <div className="relative shrink-0">
       <button
-        onClick={handleSignOut}
-        className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-semibold transition"
+        onClick={() => setMenuOpen(!menuOpen)}
+        className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-semibold transition"
       >
-        Sign Out
+        <span className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-xs">
+          {user.email?.[0].toUpperCase()}
+        </span>
+        <span className="hidden md:block max-w-[100px] truncate">
+          {user.email?.split("@")[0]}
+        </span>
       </button>
+
+      {menuOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-2xl z-50 overflow-hidden">
+            <Link
+              href="/profile"
+              onClick={() => setMenuOpen(false)}
+              className="block px-4 py-3 hover:bg-gray-800 text-sm"
+            >
+              👤 My Profile
+            </Link>
+            <Link
+              href="/watchlist"
+              onClick={() => setMenuOpen(false)}
+              className="block px-4 py-3 hover:bg-gray-800 text-sm"
+            >
+              📺 My Watchlist
+            </Link>
+            <hr className="border-gray-800" />
+            <button
+              onClick={handleSignOut}
+              className="w-full text-left px-4 py-3 hover:bg-gray-800 text-sm text-red-400"
+            >
+              🚪 Sign Out
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
