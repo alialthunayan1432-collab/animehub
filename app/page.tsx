@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
 import ContinueWatching from "@/components/ContinueWatching";
+import HeroSlider, { HeroAnime } from "@/components/HeroSlider";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -39,6 +40,22 @@ function mapToAnime(m: AniListMedia): Anime {
   };
 }
 
+function mapToHero(m: AniListMedia): HeroAnime {
+  return {
+    id: m.id.toString(),
+    title: m.title.english || m.title.romaji || "Unknown",
+    titleAr: m.title.native || m.title.romaji || "",
+    synopsis: (m.description || "").replace(/<[^>]*>/g, "").slice(0, 400),
+    banner: m.bannerImage || m.coverImage.large,
+    image: m.coverImage.large,
+    rating: (m.averageScore || 0) / 10,
+    year: m.startDate?.year || 0,
+    episodes: m.episodes || 0,
+    status: m.status === "RELEASING" ? "Ongoing" : "Completed",
+    genre: m.genres || [],
+  };
+}
+
 async function getPopularAnime(page: number): Promise<ApiResponse | null> {
   try {
     const res = await fetch(
@@ -52,6 +69,20 @@ async function getPopularAnime(page: number): Promise<ApiResponse | null> {
   }
 }
 
+async function getHeroAnime(): Promise<HeroAnime[]> {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/anime?sort=SCORE_DESC&page=1`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return [];
+    const data: ApiResponse = await res.json();
+    return data.media.slice(0, 5).map(mapToHero);
+  } catch {
+    return [];
+  }
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -60,22 +91,14 @@ export default async function Home({
   const { page } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || "1"));
   const data = await getPopularAnime(currentPage);
+  const heroAnimes = await getHeroAnime();
 
   const animes = data?.media?.map(mapToAnime) || [];
   const pageInfo = data?.pageInfo;
 
   return (
     <main className="min-h-screen">
-      <section className="px-6 py-16 bg-gradient-to-l from-purple-900 via-gray-950 to-gray-950">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-5xl font-bold mb-4">
-            Welcome to <span className="text-purple-400">AnimeHub</span> 🎬
-          </h2>
-          <p className="text-lg text-gray-300 max-w-xl">
-            Thousands of anime in one place. Discover, track, and enjoy.
-          </p>
-        </div>
-      </section>
+      <HeroSlider animes={heroAnimes} />
 
       <ContinueWatching />
 
