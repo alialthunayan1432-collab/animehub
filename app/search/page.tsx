@@ -16,6 +16,11 @@ type AniListMedia = {
   startDate?: { year?: number };
 };
 
+type ApiResponse = {
+  media: AniListMedia[];
+  pageInfo: { currentPage: number; lastPage: number; hasNextPage: boolean };
+};
+
 function mapToAnime(m: AniListMedia): Anime {
   return {
     id: m.id.toString(),
@@ -40,8 +45,8 @@ async function searchAnime(q: string): Promise<Anime[]> {
       { next: { revalidate: 300 } }
     );
     if (!res.ok) return [];
-    const data: AniListMedia[] = await res.json();
-    return data.map(mapToAnime);
+    const data: ApiResponse = await res.json();
+    return data.media.map(mapToAnime);
   } catch {
     return [];
   }

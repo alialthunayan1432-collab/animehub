@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
 import type { Anime } from "@/data/animes";
 
@@ -16,6 +17,15 @@ type AniListMedia = {
   startDate?: { year?: number };
 };
 
+type ApiResponse = {
+  media: AniListMedia[];
+  pageInfo: {
+    currentPage: number;
+    lastPage: number;
+    hasNextPage: boolean;
+  };
+};
+
 function mapToAnime(m: AniListMedia): Anime {
   return {
     id: m.id.toString(),
@@ -32,21 +42,30 @@ function mapToAnime(m: AniListMedia): Anime {
   };
 }
 
-async function getPopularAnime(): Promise<Anime[]> {
+async function getPopularAnime(page: number): Promise<ApiResponse | null> {
   try {
-    const res = await fetch("http://localhost:3000/api/anime?page=1", {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    const data: AniListMedia[] = await res.json();
-    return data.map(mapToAnime);
+    const res = await fetch(
+      `http://localhost:3000/api/anime?page=${page}`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return null;
+    return await res.json();
   } catch {
-    return [];
+    return null;
   }
 }
 
-export default async function Home() {
-  const animes = await getPopularAnime();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || "1"));
+  const data = await getPopularAnime(currentPage);
+
+  const animes = data?.media?.map(mapToAnime) || [];
+  const pageInfo = data?.pageInfo;
 
   return (
     <main className="min-h-screen">
@@ -63,7 +82,9 @@ export default async function Home() {
 
       <section className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold">Popular Now</h3>
+          <h3 className="text-2xl font-bold">
+            Popular Now {pageInfo && `— Page ${pageInfo.currentPage}`}
+          </h3>
         </div>
 
         {animes.length === 0 ? (
@@ -71,11 +92,40 @@ export default async function Home() {
             Loading anime...
           </p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {animes.map((anime) => (
-              <AnimeCard key={anime.id} anime={anime} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {animes.map((anime) => (
+                <AnimeCard key={anime.id} anime={anime} />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-center gap-3 mt-10">
+              {currentPage > 1 && (
+                <Link
+                  href={`/?page=${currentPage - 1}`}
+                  prefetch={false}
+                  className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm transition"
+                >
+                  ← Previous
+                </Link>
+              )}
+
+              <span className="text-gray-400 text-sm px-4">
+                Page {pageInfo?.currentPage} of {pageInfo?.lastPage}
+              </span>
+
+              {pageInfo?.hasNextPage && (
+                <Link
+                  href={`/?page=${currentPage + 1}`}
+                  prefetch={false}
+                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                >
+                  Next →
+                </Link>
+              )}
+            </div>
+          </>
         )}
       </section>
     </main>

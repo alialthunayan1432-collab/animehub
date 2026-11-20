@@ -47,6 +47,11 @@ export async function GET(request: Request) {
   const listQuery = `
     query ($search: String, $page: Int) {
       Page(page: $page, perPage: 24) {
+        pageInfo {
+          currentPage
+          lastPage
+          hasNextPage
+        }
         media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
           id
           title { romaji english native }
@@ -78,5 +83,8 @@ export async function GET(request: Request) {
   }
 
   const data = await response.json();
-  return NextResponse.json(data.data.Page.media);
+  return NextResponse.json({
+    media: data.data.Page.media,
+    pageInfo: data.data.Page.pageInfo,
+  });
 }
