@@ -8,6 +8,54 @@ export async function GET(request: Request) {
   const year = searchParams.get("year");
   const sort = searchParams.get("sort") || "POPULARITY_DESC";
   const page = searchParams.get("page") || "1";
+  const recommendations = searchParams.get("recommendations");
+
+  // لو طلب recommendations
+  if (recommendations === "true" && id) {
+    const recQuery = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          recommendations(sort: RATING_DESC, perPage: 12) {
+            nodes {
+              mediaRecommendation {
+                id
+                title { romaji english native }
+                coverImage { large }
+                bannerImage
+                averageScore
+                episodes
+                status
+                genres
+                description
+                startDate { year }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: recQuery,
+        variables: { id: parseInt(id) },
+      }),
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ error: "AniList failed" }, { status: 502 });
+    }
+
+    const data = await response.json();
+    const recs = data.data.Media.recommendations.nodes
+      .map((n: any) => n.mediaRecommendation)
+      .filter((m: any) => m !== null);
+
+    return NextResponse.json(recs);
+  }
 
   // لو فيه id → نجيب أنمي واحد
   if (id) {

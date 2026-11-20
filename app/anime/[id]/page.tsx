@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AnimeCard from "@/components/AnimeCard";
 import WatchlistButton from "@/components/WatchlistButton";
 import type { Anime } from "@/data/animes";
 
@@ -49,6 +50,20 @@ async function getAnime(id: string): Promise<Anime | null> {
   }
 }
 
+async function getRecommendations(id: string): Promise<Anime[]> {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/anime?id=${id}&recommendations=true`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return [];
+    const data: AniListMedia[] = await res.json();
+    return data.map(mapToAnime);
+  } catch {
+    return [];
+  }
+}
+
 export default async function AnimeDetails({
   params,
 }: {
@@ -56,6 +71,7 @@ export default async function AnimeDetails({
 }) {
   const { id } = await params;
   const anime = await getAnime(id);
+  const recommendations = await getRecommendations(id);
 
   if (!anime) notFound();
 
@@ -149,6 +165,17 @@ export default async function AnimeDetails({
               >
                 {ep}
               </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recommendations.length > 0 && (
+        <section className="px-6 py-10 max-w-7xl mx-auto">
+          <h2 className="text-xl font-semibold mb-4">You might also like</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {recommendations.map((rec) => (
+              <AnimeCard key={rec.id} anime={rec} />
             ))}
           </div>
         </section>
