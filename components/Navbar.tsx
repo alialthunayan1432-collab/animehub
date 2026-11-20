@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -24,16 +25,23 @@ export default function Navbar() {
   async function goRandom() {
     try {
       const res = await fetch(
-        "http://localhost:3000/api/anime?sort=TRENDING_DESC&page=1"
+        "/api/anime?sort=TRENDING_DESC&page=1"
       );
+
       if (!res.ok) return;
+
       const data = await res.json();
       const media = data.media || [];
+
       if (media.length === 0) return;
+
       const random = media[Math.floor(Math.random() * media.length)];
+
       router.push(`/anime/${random.id}`);
       setMobileMenuOpen(false);
-    } catch {}
+    } catch (error) {
+      console.error("Random anime failed:", error);
+    }
   }
 
   return (
@@ -63,6 +71,7 @@ export default function Navbar() {
               }`}
             >
               {l.label}
+
               {l.href === "/watchlist" && watchlist.length > 0 && (
                 <span className="ml-1 bg-purple-600 text-white text-xs rounded-full px-1.5 py-0.5">
                   {watchlist.length}
@@ -106,10 +115,13 @@ export default function Navbar() {
                 href={l.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`py-3 px-2 border-b border-gray-800/50 text-sm ${
-                  pathname === l.href ? "text-purple-400 font-semibold" : "text-gray-300"
+                  pathname === l.href
+                    ? "text-purple-400 font-semibold"
+                    : "text-gray-300"
                 }`}
               >
                 {l.label}
+
                 {l.href === "/watchlist" && watchlist.length > 0 && (
                   <span className="ml-2 bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">
                     {watchlist.length}
@@ -117,6 +129,7 @@ export default function Navbar() {
                 )}
               </Link>
             ))}
+
             <button
               onClick={goRandom}
               className="py-3 px-2 text-sm text-gray-300 text-left"

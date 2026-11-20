@@ -1,8 +1,12 @@
+
 import AnimeCard from "@/components/AnimeCard";
 import SearchFilters from "@/components/SearchFilters";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 type AniListMedia = {
   id: number;
@@ -44,19 +48,27 @@ async function searchAnime(
   sort: string
 ): Promise<Anime[]> {
   if (!q) return [];
+
   try {
     const params = new URLSearchParams({ q });
+
     if (year) params.set("year", year);
     if (sort) params.set("sort", sort);
 
     const res = await fetch(
-      `http://localhost:3000/api/anime?${params.toString()}`,
+      `${SITE_URL}/api/anime?${params.toString()}`,
       { next: { revalidate: 300 } }
     );
-    if (!res.ok) return [];
-    const data: ApiResponse = await res.json();
-    return data.media.map(mapToAnime);
-  } catch {
+
+    if (!res.ok) {
+      console.error("Search API error:", res.status);
+      return [];
+    }
+
+    const data = (await res.json()) as ApiResponse;
+    return data.media?.map(mapToAnime) || [];
+  } catch (error) {
+    console.error("Search fetch failed:", error);
     return [];
   }
 }
@@ -67,6 +79,7 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string; year?: string; sort?: string }>;
 }) {
   const { q, year, sort } = await searchParams;
+
   const query = (q || "").trim();
   const currentYear = year || "";
   const currentSort = sort || "POPULARITY_DESC";
@@ -77,6 +90,7 @@ export default async function SearchPage({
     <main className="min-h-screen">
       <section className="max-w-7xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold mb-2">Search</h1>
+
         <p className="text-gray-400 mb-6">
           {query
             ? `Results for "${query}" — ${results.length} found`
@@ -84,13 +98,18 @@ export default async function SearchPage({
         </p>
 
         {query && (
-          <SearchFilters currentYear={currentYear} currentSort={currentSort} />
+          <SearchFilters
+            currentYear={currentYear}
+            currentSort={currentSort}
+          />
         )}
 
         {results.length === 0 && query ? (
           <div className="text-center py-20">
             <p className="text-6xl mb-4">🔍</p>
-            <p className="text-xl text-gray-400 mb-2">No results found</p>
+            <p className="text-xl text-gray-400 mb-2">
+              No results found
+            </p>
             <p className="text-sm text-gray-500">
               Try another keyword or clear the filters
             </p>

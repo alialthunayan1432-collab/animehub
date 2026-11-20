@@ -1,9 +1,13 @@
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 const SAMPLE_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
 
@@ -38,15 +42,25 @@ function mapToAnime(m: AniListMedia): Anime {
 
 async function getAnime(id: string): Promise<Anime | null> {
   try {
+    const params = new URLSearchParams({ id });
+
     const res = await fetch(
-      `http://localhost:3000/api/anime?id=${id}`,
+      `${SITE_URL}/api/anime?${params.toString()}`,
       { next: { revalidate: 300 } }
     );
-    if (!res.ok) return null;
+
+    if (!res.ok) {
+      console.error("Watch API error:", res.status);
+      return null;
+    }
+
     const data: AniListMedia = await res.json();
+
     if (!data || !data.id) return null;
+
     return mapToAnime(data);
-  } catch {
+  } catch (error) {
+    console.error("Watch fetch failed:", error);
     return null;
   }
 }
@@ -60,10 +74,16 @@ export default async function WatchPage({
 }) {
   const { id } = await params;
   const { ep } = await searchParams;
+
   const anime = await getAnime(id);
+
   if (!anime) notFound();
 
-  const currentEp = Number(ep) || 1;
+  const parsedEp = Number.parseInt(ep || "1", 10);
+  const currentEp = Number.isNaN(parsedEp)
+    ? 1
+    : Math.max(1, parsedEp);
+
   const totalEp = Math.min(anime.episodes || 12, 12);
   const nextEp = currentEp < totalEp ? currentEp + 1 : null;
   const prevEp = currentEp > 1 ? currentEp - 1 : null;
@@ -120,6 +140,7 @@ export default async function WatchPage({
 
         <div className="mt-8">
           <h2 className="text-lg font-semibold mb-3">Episodes</h2>
+
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
             {Array.from({ length: totalEp }, (_, i) => i + 1).map((n) => (
               <Link

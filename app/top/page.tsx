@@ -1,8 +1,12 @@
+
 import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 type AniListMedia = {
   id: number;
@@ -41,12 +45,18 @@ function mapToAnime(m: AniListMedia): Anime {
 async function getTopRated(page: number): Promise<ApiResponse | null> {
   try {
     const res = await fetch(
-      `http://localhost:3000/api/anime?sort=SCORE_DESC&page=${page}`,
+      `${SITE_URL}/api/anime?sort=SCORE_DESC&page=${page}`,
       { next: { revalidate: 300 } }
     );
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
+
+    if (!res.ok) {
+      console.error("Top Rated API error:", res.status);
+      return null;
+    }
+
+    return (await res.json()) as ApiResponse;
+  } catch (error) {
+    console.error("Top Rated fetch failed:", error);
     return null;
   }
 }
@@ -57,7 +67,12 @@ export default async function TopPage({
   searchParams: Promise<{ page?: string }>;
 }) {
   const { page } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page || "1"));
+
+  const parsedPage = Number.parseInt(page || "1", 10);
+  const currentPage = Number.isNaN(parsedPage)
+    ? 1
+    : Math.max(1, parsedPage);
+
   const data = await getTopRated(currentPage);
   const animes = data?.media?.map(mapToAnime) || [];
   const pageInfo = data?.pageInfo;
@@ -69,6 +84,7 @@ export default async function TopPage({
           <h1 className="text-5xl font-bold">
             🏆 Top Rated <span className="text-yellow-400">Anime</span>
           </h1>
+
           <p className="text-gray-400 mt-2">
             The highest-rated anime of all time
           </p>
@@ -77,7 +93,9 @@ export default async function TopPage({
 
       <section className="max-w-7xl mx-auto px-6 py-10">
         {animes.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">Loading...</p>
+          <p className="text-center text-gray-400 py-10">
+            No anime available right now.
+          </p>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -96,9 +114,12 @@ export default async function TopPage({
                   ← Previous
                 </Link>
               )}
+
               <span className="text-gray-400 text-sm px-4">
-                Page {pageInfo?.currentPage} of {pageInfo?.lastPage}
+                Page {pageInfo?.currentPage || currentPage} of{" "}
+                {pageInfo?.lastPage || 1}
               </span>
+
               {pageInfo?.hasNextPage && (
                 <Link
                   href={`/top?page=${currentPage + 1}`}

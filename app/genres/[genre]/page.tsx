@@ -1,8 +1,12 @@
+
 import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 type AniListMedia = {
   id: number;
@@ -38,15 +42,29 @@ function mapToAnime(m: AniListMedia): Anime {
   };
 }
 
-async function getByGenre(genre: string, page: number): Promise<ApiResponse | null> {
+async function getByGenre(
+  genre: string,
+  page: number
+): Promise<ApiResponse | null> {
   try {
+    const params = new URLSearchParams({
+      genre,
+      page: page.toString(),
+    });
+
     const res = await fetch(
-      `http://localhost:3000/api/anime?genre=${encodeURIComponent(genre)}&page=${page}`,
+      `${SITE_URL}/api/anime?${params.toString()}`,
       { next: { revalidate: 300 } }
     );
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
+
+    if (!res.ok) {
+      console.error("Genre API error:", res.status);
+      return null;
+    }
+
+    return (await res.json()) as ApiResponse;
+  } catch (error) {
+    console.error("Genre fetch failed:", error);
     return null;
   }
 }
@@ -60,7 +78,12 @@ export default async function GenrePage({
 }) {
   const { genre } = await params;
   const { page } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page || "1"));
+
+  const parsedPage = Number.parseInt(page || "1", 10);
+  const currentPage = Number.isNaN(parsedPage)
+    ? 1
+    : Math.max(1, parsedPage);
+
   const genreName = decodeURIComponent(genre);
 
   const data = await getByGenre(genreName, currentPage);
@@ -78,9 +101,12 @@ export default async function GenrePage({
           >
             ← All Genres
           </Link>
+
           <h1 className="text-5xl font-bold mt-3">{genreName}</h1>
+
           <p className="text-gray-400 mt-2">
-            {pageInfo && `Page ${pageInfo.currentPage} of ${pageInfo.lastPage}`}
+            {pageInfo &&
+              `Page ${pageInfo.currentPage} of ${pageInfo.lastPage}`}
           </p>
         </div>
       </section>
@@ -88,7 +114,9 @@ export default async function GenrePage({
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-6 py-10">
         {animes.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">Loading...</p>
+          <p className="text-center text-gray-400 py-10">
+            Loading...
+          </p>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -107,9 +135,11 @@ export default async function GenrePage({
                   ← Previous
                 </Link>
               )}
+
               <span className="text-gray-400 text-sm px-4">
                 Page {pageInfo?.currentPage} of {pageInfo?.lastPage}
               </span>
+
               {pageInfo?.hasNextPage && (
                 <Link
                   href={`/genres/${encodeURIComponent(genreName)}?page=${currentPage + 1}`}
