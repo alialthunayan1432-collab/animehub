@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import WatchlistButton from "@/components/WatchlistButton";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -123,12 +124,15 @@ export default async function AnimeDetails({
               {anime.synopsis}
             </p>
 
-            <Link
-              href={`/watch/${anime.id}?ep=1`}
-              className="inline-block mt-6 bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition"
-            >
-              ▶ Watch Now
-            </Link>
+            <div className="flex flex-wrap gap-3 mt-6">
+              <Link
+                href={`/watch/${anime.id}?ep=1`}
+                className="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition"
+              >
+                ▶ Watch Now
+              </Link>
+              <WatchlistButton anime={anime} />
+            </div>
           </div>
         </div>
       </section>

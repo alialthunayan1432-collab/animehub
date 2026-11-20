@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useWatchlist } from "./WatchlistContext";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [search, setSearch] = useState("");
+  const { watchlist } = useWatchlist();
 
   const links = [
     { href: "/", label: "Home" },
     { href: "/top", label: "Top Rated" },
     { href: "/genres", label: "Genres" },
+    { href: "/watchlist", label: "My List" },
   ];
 
   return (
@@ -26,16 +29,20 @@ export default function Navbar() {
             <Link
               key={l.href}
               href={l.href}
-              className={`hover:text-white transition ${
+              className={`hover:text-white transition relative ${
                 pathname === l.href ? "text-purple-400 font-semibold" : ""
               }`}
             >
               {l.label}
+              {l.href === "/watchlist" && watchlist.length > 0 && (
+                <span className="ml-1 bg-purple-600 text-white text-xs rounded-full px-1.5 py-0.5">
+                  {watchlist.length}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
 
-        {/* شريط البحث */}
         <form action="/search" className="flex-1 max-w-md ml-auto">
           <input
             type="text"
