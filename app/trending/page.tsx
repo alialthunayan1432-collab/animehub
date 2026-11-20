@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
 import type { Anime } from "@/data/animes";
@@ -6,20 +7,32 @@ export const instant = false;
 
 type AniListMedia = {
   id: number;
-  title: { romaji?: string; english?: string; native?: string };
-  coverImage: { large: string };
+  title: {
+    romaji?: string;
+    english?: string;
+    native?: string;
+  };
+  coverImage: {
+    large: string;
+  };
   bannerImage?: string;
   averageScore?: number;
   episodes?: number;
   status: string;
   genres: string[];
   description?: string;
-  startDate?: { year?: number };
+  startDate?: {
+    year?: number;
+  };
 };
 
 type ApiResponse = {
   media: AniListMedia[];
-  pageInfo: { currentPage: number; lastPage: number; hasNextPage: boolean };
+  pageInfo: {
+    currentPage: number;
+    lastPage: number;
+    hasNextPage: boolean;
+  };
 };
 
 function mapToAnime(m: AniListMedia): Anime {
@@ -27,7 +40,9 @@ function mapToAnime(m: AniListMedia): Anime {
     id: m.id.toString(),
     title: m.title.english || m.title.romaji || "Unknown",
     titleAr: m.title.native || m.title.romaji || "",
-    synopsis: (m.description || "").replace(/<[^>]*>/g, "").slice(0, 300),
+    synopsis: (m.description || "")
+      .replace(/<[^>]*>/g, "")
+      .slice(0, 300),
     year: m.startDate?.year || 0,
     rating: (m.averageScore || 0) / 10,
     genre: m.genres || [],
@@ -40,13 +55,26 @@ function mapToAnime(m: AniListMedia): Anime {
 
 async function getTrending(page: number): Promise<ApiResponse | null> {
   try {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
     const res = await fetch(
-      `http://localhost:3000/api/anime?sort=TRENDING_DESC&page=${page}`,
-      { next: { revalidate: 300 } }
+      `${siteUrl}/api/anime?sort=TRENDING_DESC&page=${page}`,
+      {
+        next: {
+          revalidate: 300,
+        },
+      }
     );
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
+
+    if (!res.ok) {
+      console.error("Trending API error:", res.status);
+      return null;
+    }
+
+    return (await res.json()) as ApiResponse;
+  } catch (error) {
+    console.error("Trending fetch failed:", error);
     return null;
   }
 }
@@ -57,8 +85,14 @@ export default async function TrendingPage({
   searchParams: Promise<{ page?: string }>;
 }) {
   const { page } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page || "1"));
+
+  const parsedPage = Number.parseInt(page || "1", 10);
+  const currentPage = Number.isNaN(parsedPage)
+    ? 1
+    : Math.max(1, parsedPage);
+
   const data = await getTrending(currentPage);
+
   const animes = data?.media?.map(mapToAnime) || [];
   const pageInfo = data?.pageInfo;
 
@@ -69,6 +103,7 @@ export default async function TrendingPage({
           <h1 className="text-5xl font-bold">
             🔥 <span className="text-orange-400">Trending</span> Now
           </h1>
+
           <p className="text-gray-400 mt-2">
             The hottest anime everyone is watching right now
           </p>
@@ -77,7 +112,14 @@ export default async function TrendingPage({
 
       <section className="max-w-7xl mx-auto px-6 py-10">
         {animes.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">Loading...</p>
+          <div className="text-center text-gray-400 py-10">
+            <p className="text-xl font-semibold">
+              No anime available right now.
+            </p>
+            <p className="text-sm mt-2">
+              Please try again later.
+            </p>
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -96,9 +138,12 @@ export default async function TrendingPage({
                   ← Previous
                 </Link>
               )}
+
               <span className="text-gray-400 text-sm px-4">
-                Page {pageInfo?.currentPage} of {pageInfo?.lastPage}
+                Page {pageInfo?.currentPage || currentPage} of{" "}
+                {pageInfo?.lastPage || 1}
               </span>
+
               {pageInfo?.hasNextPage && (
                 <Link
                   href={`/trending?page=${currentPage + 1}`}
