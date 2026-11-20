@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useWatchlist } from "./WatchlistContext";
+import UserNav from "./UserNav";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -21,7 +22,9 @@ export default function Navbar() {
 
   async function goRandom() {
     try {
-      const res = await fetch("http://localhost:3000/api/anime?sort=TRENDING_DESC&page=1");
+      const res = await fetch(
+        "http://localhost:3000/api/anime?sort=TRENDING_DESC&page=1"
+      );
       if (!res.ok) return;
       const data = await res.json();
       const media = data.media || [];
@@ -76,9 +79,7 @@ export default function Navbar() {
           🎲
         </button>
 
-        <button className="hidden sm:block bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition shrink-0">
-          Sign In
-        </button>
+        <UserNav />
       </div>
     </header>
   );
