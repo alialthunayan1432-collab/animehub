@@ -2,6 +2,7 @@ import Link from "next/link";
 import AnimeCard from "@/components/AnimeCard";
 import ContinueWatching from "@/components/ContinueWatching";
 import HeroSlider, { HeroAnime } from "@/components/HeroSlider";
+import { AnimeGridSkeleton } from "@/components/Skeleton";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
@@ -104,6 +105,7 @@ export default async function Home({
 }) {
   const { page } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || "1"));
+
   const [data, heroAnimes, trendingAnimes] = await Promise.all([
     getPopularAnime(currentPage),
     getHeroAnime(),
@@ -148,7 +150,7 @@ export default async function Home({
         </div>
 
         {animes.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">Loading anime...</p>
+          <AnimeGridSkeleton />
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
