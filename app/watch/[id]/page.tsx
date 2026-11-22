@@ -38,10 +38,14 @@ function mapToAnime(m: AniListMedia): Anime {
 
 async function getAnime(id: string): Promise<Anime | null> {
   try {
-    const res = await fetch(
-      `http://localhost:3000/api/anime?id=${id}`,
-      { next: { revalidate: 300 } }
-    );
+    // ✅ استخدام رابط الموقع (Vercel أو localhost) بدل localhost الثابت
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+    const res = await fetch(`${baseUrl}/api/anime?id=${id}`, {
+      next: { revalidate: 300 },
+    });
+
     if (!res.ok) return null;
     const data: AniListMedia = await res.json();
     if (!data || !data.id) return null;
