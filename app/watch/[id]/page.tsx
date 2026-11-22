@@ -1,15 +1,11 @@
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import VideoPlayer from "@/components/VideoPlayer";
 import type { Anime } from "@/data/animes";
 
 export const instant = false;
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
-const SAMPLE_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
+// 🔴 هنا تحط معرف الفيديو (الجزء اللي بعد /embed/ وقبل ?)
+const YOUTUBE_VIDEO_ID = "5ILlar1UJ88";
 
 type AniListMedia = {
   id: number;
@@ -42,25 +38,15 @@ function mapToAnime(m: AniListMedia): Anime {
 
 async function getAnime(id: string): Promise<Anime | null> {
   try {
-    const params = new URLSearchParams({ id });
-
     const res = await fetch(
-      `${SITE_URL}/api/anime?${params.toString()}`,
+      `http://localhost:3000/api/anime?id=${id}`,
       { next: { revalidate: 300 } }
     );
-
-    if (!res.ok) {
-      console.error("Watch API error:", res.status);
-      return null;
-    }
-
+    if (!res.ok) return null;
     const data: AniListMedia = await res.json();
-
     if (!data || !data.id) return null;
-
     return mapToAnime(data);
-  } catch (error) {
-    console.error("Watch fetch failed:", error);
+  } catch {
     return null;
   }
 }
@@ -74,16 +60,10 @@ export default async function WatchPage({
 }) {
   const { id } = await params;
   const { ep } = await searchParams;
-
   const anime = await getAnime(id);
-
   if (!anime) notFound();
 
-  const parsedEp = Number.parseInt(ep || "1", 10);
-  const currentEp = Number.isNaN(parsedEp)
-    ? 1
-    : Math.max(1, parsedEp);
-
+  const currentEp = Number(ep) || 1;
   const totalEp = Math.min(anime.episodes || 12, 12);
   const nextEp = currentEp < totalEp ? currentEp + 1 : null;
   const prevEp = currentEp > 1 ? currentEp - 1 : null;
@@ -100,16 +80,20 @@ export default async function WatchPage({
       </div>
 
       <section className="max-w-6xl mx-auto px-4 py-6">
-        <VideoPlayer
-          src={SAMPLE_VIDEO}
-          poster={anime.banner}
-          title={`${anime.title} - Episode ${currentEp}`}
-          animeId={anime.id}
-          animeTitle={anime.title}
-          animeImage={anime.image}
-          episode={currentEp}
-        />
+        {/* 🎬 YouTube Player */}
+        <div className="w-full aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+          <iframe
+            key={currentEp}
+            src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0`}
+            className="w-full h-full"
+            title={`${anime.title} - Episode ${currentEp}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </div>
 
+        {/* Navigation */}
         <div className="flex items-center justify-between mt-4">
           {prevEp ? (
             <Link
@@ -138,9 +122,9 @@ export default async function WatchPage({
           )}
         </div>
 
+        {/* Episode List */}
         <div className="mt-8">
           <h2 className="text-lg font-semibold mb-3">Episodes</h2>
-
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
             {Array.from({ length: totalEp }, (_, i) => i + 1).map((n) => (
               <Link
